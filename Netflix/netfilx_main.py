@@ -8,6 +8,8 @@ import math
 
 # CONST
 
+print("NADAV the king is here")
+
 movie_titles, train, test = load_and_set_data()
 print_general_info(train, test)
 train, test = clean_data(train, test)
