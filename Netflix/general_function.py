@@ -69,9 +69,9 @@ def clean_data(train, test, threshold=0):
     test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(0, x.mean()), axis=1)
 
 
-    print('Scaling MinMax each row')
-    train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: scale_min_max(x), axis=1)
-    test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: scale_min_max(x), axis=1)
+    # print('Scaling MinMax each row')
+    # train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: scale_min_max(x), axis=1)
+    # test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: scale_min_max(x), axis=1)
 
     return train, test
 
