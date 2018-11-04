@@ -27,6 +27,50 @@ def load_and_set_data():
 
     return movie_titles, train, test
 
+def set_df_from_metrix(train, test):
+    print('Setting up DF from matrix')
+    columns = ['uid', 'iid', 'rating', 'date','y_rating', 'y_date']
+    df_train = pd.DataFrame(columns=columns)
+
+    for i in range(train['train_ratings_all'].shape[0]):
+        for j in range(train['train_ratings_all'].shape[1]):
+            temp = []
+            temp.append(i)
+            temp.append(j)
+            temp.append(train['train_ratings_all'].iloc[i,j])
+            temp.append(train['train_dates_all'].iloc[i, j])
+            if 0 in temp[2:]:
+                continue
+            temp.append(int(train['train_y_rating'].iloc[i]))
+            temp.append(int(train['train_y_date'].iloc[i]))
+            df_train = df_train.append(pd.DataFrame([temp], columns=columns))
+        print('Finished user {} in training data'.format(i))
+
+    df_train.to_csv(
+        '/Users/ronlitman/Ronlitman/University/Statistic/שנה א׳ - סמט׳ א׳/למידה סטטיסטית/Netflix/df_train.csv')
+
+    columns = ['uid', 'iid', 'rating', 'date', 'y_date']
+    df_test = pd.DataFrame(columns=columns)
+    for i in range(test['test_ratings_all'].shape[0]):
+        for j in range(test['test_ratings_all'].shape[1]):
+            temp = []
+            temp.append(i)
+            temp.append(j)
+            temp.append(test['test_ratings_all'].iloc[i,j])
+            temp.append(test['test_dates_all'].iloc[i, j])
+            if 0 in temp[2:]:
+                continue
+            # temp.append(int(test['test_y_rating'].iloc[i]))
+            temp.append(int(test['test_y_date'].iloc[i]))
+            df_test = df_test.append(pd.DataFrame([temp], columns=columns))
+            print('Finished user {} in test data'.format(i))
+
+
+    df_test.to_csv(
+        '/Users/ronlitman/Ronlitman/University/Statistic/שנה א׳ - סמט׳ א׳/למידה סטטיסטית/Netflix/df_test.csv')
+
+    return df_train, df_test
+
 def print_general_info(train, test):
     '''
     print general info for the data sets
@@ -51,7 +95,7 @@ def print_general_info(train, test):
     print('Date range in train Ratings: {} - {}'.format(int(train['train_y_date'].min()), int(train['train_y_date'].max())))
     print('Date range in test Ratings: {} - {}'.format(int(test['test_y_date'].min()), int(test['test_y_date'].max())))
 
-def clean_data(train, test, threshold=0):
+def clean_data(train, test, threshold=-1):
     '''
     remove users with variance lower then the threshold (in ratings)
     :param train:
@@ -65,8 +109,11 @@ def clean_data(train, test, threshold=0):
     train['train_y_rating'] = train['train_y_rating'][users_var]
 
     print('Replacing the missing values with the mean rating of the user')
-    train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: x.replace(0, x.mean()), axis=1)
-    test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(0, x.mean()), axis=1)
+    train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: x.replace(0, x.mean()), axis=0)
+    test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(0, x.mean()), axis=0)
+
+    # train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: x.replace(-99999, x.mean()), axis=0)
+    # test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(-99999, x.mean()), axis=0)
 
 
     # print('Scaling MinMax each row')
@@ -75,10 +122,8 @@ def clean_data(train, test, threshold=0):
 
     return train, test
 
-def split_train_dev(train, test_size=0.2):
-    x_train, x_dev, y_train, y_dev = train_test_split(train['train_ratings_all'],
-                                                        train['train_y_rating'],
-                                                        test_size=test_size)
+def split_train_dev(data, labels, test_size=0.2):
+    x_train, x_dev, y_train, y_dev = train_test_split(data, labels, test_size=test_size)
     return x_train, x_dev, y_train, y_dev
 
 def scale_min_max(x):
