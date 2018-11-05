@@ -55,14 +55,14 @@ movie_titles, train, test = load_and_set_data()
 
 print_general_info(train, test)
 
-df_train, df_test = set_df_from_metrix(train, test)
+# df_train, df_test = set_df_from_metrix(train, test)
 
 
-# train, test = clean_data(train, test)
+train, test = clean_data(train, test)
 
-# x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'])
+x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'])
 
-# clf = run_lin_model(x_train, x_dev, y_train, y_dev)
+clf = run_lin_model(x_train, x_dev, y_train, y_dev)
 
 # clf = run_cat(x_train, x_dev, y_train, y_dev)
 
@@ -71,9 +71,9 @@ df_train, df_test = set_df_from_metrix(train, test)
 
 # clf = run_xgb_model(x_train, x_dev, y_train, y_dev)
 
-# clf = run_lgb_model(x_train, x_dev, y_train, y_dev)
+clf = run_lgb_model(x_train, x_dev, y_train, y_dev)
 
 
-# preds_test = clf.predict(test['test_ratings_all'], num_iteration=clf.best_iteration)
-# np.savetxt('/Users/ronlitman/Ronlitman/University/Statistic/שנה א׳ - סמט׳ א׳/למידה סטטיסטית/Netflix/preds.csv',
-#            preds_test, delimiter=",")
+preds_test = clf.predict(test['test_ratings_all'], num_iteration=clf.best_iteration)
+np.savetxt('/Users/ronlitman/Ronlitman/University/Statistic/שנה א׳ - סמט׳ א׳/למידה סטטיסטית/Netflix/preds.csv',
+           preds_test, delimiter=",")
