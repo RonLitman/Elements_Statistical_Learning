@@ -95,7 +95,7 @@ def print_general_info(train, test):
     print('Date range in train Ratings: {} - {}'.format(int(train['train_y_date'].min()), int(train['train_y_date'].max())))
     print('Date range in test Ratings: {} - {}'.format(int(test['test_y_date'].min()), int(test['test_y_date'].max())))
 
-def clean_data(train, test, threshold=-1):
+def clean_data(train, test, threshold=0):
     '''
     remove users with variance lower then the threshold (in ratings)
     :param train:
@@ -108,12 +108,15 @@ def clean_data(train, test, threshold=-1):
     train['train_ratings_all'] = train['train_ratings_all'][users_var]
     train['train_y_rating'] = train['train_y_rating'][users_var]
 
-    print('Replacing the missing values with the mean rating of the user')
-    train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: x.replace(0, x.mean()), axis=0)
-    test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(0, x.mean()), axis=0)
+    train['train_ratings_all'] = train['train_ratings_all'].replace(0, np.nan)
+    test['test_ratings_all'] = test['test_ratings_all'].replace(0, np.nan)
 
-    # train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: x.replace(-99999, x.mean()), axis=0)
-    # test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(-99999, x.mean()), axis=0)
+    print('Replacing the missing values with the mean rating of the user')
+    train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: x.replace(np.nan, x.mean()), axis=0)
+    test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(np.nan, x.mean()), axis=0)
+
+    # train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: x.replace(-99999, x.mean()), axis=1)
+    # test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: x.replace(-99999, x.mean()), axis=1)
 
 
     # print('Scaling MinMax each row')
