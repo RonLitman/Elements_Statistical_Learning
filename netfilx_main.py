@@ -1,0 +1,96 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import models
+from general_function import *
+from sklearn.metrics import mean_squared_error
+import math
+import xgboost as xgb
+
+def run_lgb_loop(dict_train, iter_time=100):
+    train = []
+    dev = []
+    for i in range(0, iter_time):
+        x_train, x_dev, y_train, y_dev = split_train_dev(dict_train['train_ratings_all'], dict_train['train_y_rating'])
+        clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
+        train.append(mse_train_reg)
+        dev.append(mse_dev_reg)
+        print(i)
+        print('minimum:', min(dev), 'maximum:', max(dev), 'std:', np.std(dev), 'mean:', np.mean(dev))
+
+def run_lin_model(x_train, x_dev, y_train, y_dev):
+    print('\n')
+    clf = models.lin_model(x_train, y_train)
+    preds_train = clf.predict(x_train)
+    preds_dev = clf.predict(x_dev)
+    mse_train_reg = math.sqrt(mean_squared_error(y_train, preds_train))
+    mse_dev_reg = math.sqrt(mean_squared_error(y_dev, preds_dev))
+    print('RMSE on train is: {}'.format(mse_train_reg))
+    print('RMSE on DEV is: {}'.format(mse_dev_reg))
+    return clf, mse_train_reg, mse_dev_reg
+
+
+def run_cat(x_train, x_dev, y_train, y_dev):
+    print('\n')
+    clf = models.run_catbost(x_train, x_dev, y_train, y_dev)
+    preds_train = clf.predict(x_train)
+    preds_dev = clf.predict(x_dev)
+    mse_train_reg = math.sqrt(mean_squared_error(y_train, preds_train))
+    mse_dev_reg = math.sqrt(mean_squared_error(y_dev, preds_dev))
+    print('RMSE on train is: {}'.format(mse_train_reg))
+    print('RMSE on DEV is: {}'.format(mse_dev_reg))
+    return clf
+
+def run_lgb_model(x_train, x_dev, y_train, y_dev):
+    print('\n')
+    clf = models.run_lgb(x_train, x_dev, y_train, y_dev)
+    preds_train = clf.predict(x_train, num_iteration=clf.best_iteration)
+    preds_dev = clf.predict(x_dev, num_iteration=clf.best_iteration)
+    mse_train_reg = math.sqrt(mean_squared_error(y_train, preds_train))
+    mse_dev_reg = math.sqrt(mean_squared_error(y_dev, preds_dev))
+    print('RMSE on train is: {}'.format(mse_train_reg))
+    print('RMSE on DEV is: {}'.format(mse_dev_reg))
+    return clf, mse_train_reg, mse_dev_reg
+
+def run_xgb_model(x_train, x_dev, y_train, y_dev):
+    print('\n')
+    clf = models.run_xgb(x_train, x_dev, y_train, y_dev)
+    dtest = xgb.DMatrix(x_dev)
+    preds_dev = clf.predict(dtest, ntree_limit=clf.best_ntree_limit)
+    mse_dev_reg = math.sqrt(mean_squared_error(y_dev, preds_dev))
+    print('RMSE on DEV is: {}'.format(mse_dev_reg))
+    return clf
+
+
+movie_titles, train, test = load_and_set_data()
+
+print_general_info(train, test)
+
+# df_train, df_test = set_df_from_metrix(train, test)
+
+train, test = clean_data(train, test)
+train['train_ratings_all'] = train['train_ratings_all'].replace(np.nan, 0)
+test['test_ratings_all'] = test['test_ratings_all'].replace(np.nan, 0)
+
+train['train_ratings_all'].iloc[:, list(range(0, 99))].mean(axis=1)
+# condition =(train['train_ratings_all']['movies_on_day']==0)
+# train['train_ratings_all']['movies_on_day'][condition] = train['train_ratings_all'][condition].iloc[:, list(range(0, 98))].mean(axis=1)
+x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'])
+clf, mse_train_reg, mse_dev_reg = run_lin_model(x_train, x_dev, y_train, y_dev)
+
+clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
+
+# clf = run_cat(x_train, x_dev, y_train, y_dev)
+
+# models.run_knn_cosine(x_train, x_dev, y_train, y_dev)
+# models.run_knn_manhattan(x_train, x_dev, y_train, y_dev)
+
+# clf = run_xgb_model(x_train, x_dev, y_train, y_dev)
+
+run_lgb_loop(train, iter_time=100)
+
+preds_test = clf.predict(test['test_ratings_all'], num_iteration=clf.best_iteration)
+
+
+# np.savetxt('/Users/nadavnagel/Documents/studying/University/Msc/Elements_Statistical_Learning/Netflix/NadavPreds.csv',
+#            preds_test, delimiter=",")
