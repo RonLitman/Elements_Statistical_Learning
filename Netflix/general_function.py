@@ -140,8 +140,8 @@ def split_train_dev(data, labels, test, test_size=0.2, Type='random'):
         knn = KNeighborsClassifier(n_neighbors=1)
         knn.fit(data, labels)
         index_for_dev = knn.kneighbors(test['test_ratings_all'].replace(np.nan, 0))[1]
-        index_for_dev = [int(i[0]) for i in index_for_dev]
-        index_for_train = [i for i in data.index if i not in index_for_dev]
+        index_for_dev = list(set([int(i[0]) for i in index_for_dev]))
+        index_for_train = list(set([i for i in data.index if i not in index_for_dev]))
         x_train = data.iloc[index_for_train, :]
         x_dev = data.iloc[index_for_dev, :]
         y_train = labels.iloc[index_for_train, :]
