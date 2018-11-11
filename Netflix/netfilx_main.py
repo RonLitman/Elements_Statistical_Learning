@@ -84,6 +84,6 @@ clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
 preds_test = clf.predict(test['test_ratings_all'], num_iteration=clf.best_iteration)
 
 
-# np.savetxt('/Users/nadavnagel/Documents/studying/University/Msc/Elements_Statistical_Learning/Netflix/NadavPreds.csv',
-#            preds_test, delimiter=",")
+np.savetxt('/Users/nadavnagel/Documents/studying/University/Msc/Elements_Statistical_Learning/Netflix/NadavPreds.csv',
+           preds_test, delimiter=",")
 
