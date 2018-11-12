@@ -136,22 +136,23 @@ def clean_data(train, test):
 
 def split_train_dev(data, labels, test, test_size=0.2, Type='random'):
     if Type == 'knn':
-        data = data.replace(np.nan, 0)
         knn = KNeighborsClassifier(n_neighbors=1)
         knn.fit(data, labels)
-        index_for_dev = knn.kneighbors(test['test_ratings_all'].replace(np.nan, 0))[1]
-        index_for_dev = list(set([int(i[0]) for i in index_for_dev]))
-        # index_for_dev = []
-        # for x in range(2000):
-        #     index_for_dev.append(random.randint(1, 9999))
 
+        index_for_dev = knn.kneighbors(test['test_ratings_all'])[1]
+
+        index_for_dev = list(set([int(i[0]) for i in index_for_dev]))
         index_for_train = list(set([i for i in data.index if i not in index_for_dev]))
+
         x_train = data.iloc[index_for_train, :]
         x_dev = data.iloc[index_for_dev, :]
+
         y_train = labels.iloc[index_for_train, :]
         y_dev = labels.iloc[index_for_dev, :]
+
     if Type == 'random':
         x_train, x_dev, y_train, y_dev = train_test_split(data, labels, test_size=test_size)
+
     return x_train, x_dev, y_train, y_dev
 
 
@@ -163,7 +164,9 @@ def lin_model(x_train, x_test, y_train, method='normal'):
     clf = models.lin_model(x_train, y_train, method=method)
     preds = clf.predict(x_test)
 
-    return list(more_itertools.flatten([preds]))
+    if method == 'Lasso':
+        return list(more_itertools.flatten([preds]))
+    return list(more_itertools.flatten(preds))
 
 
 def set_column_order(df_ratings_all):

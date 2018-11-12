@@ -72,6 +72,7 @@ train, test = clean_data(train, test)
 x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'], test)
 
 clf, mse_train_reg, mse_dev_reg = run_lin_model(x_train, x_dev, y_train, y_dev)
+
 clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
 
 # clf = run_cat(x_train, x_dev, y_train, y_dev)
