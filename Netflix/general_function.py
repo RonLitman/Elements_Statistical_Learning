@@ -95,7 +95,7 @@ def print_general_info(train, test):
     print('Date range in train Ratings: {} - {}'.format(int(train['train_y_date'].min()), int(train['train_y_date'].max())))
     print('Date range in test Ratings: {} - {}'.format(int(test['test_y_date'].min()), int(test['test_y_date'].max())))
 
-def clean_data(train, test, threshold=-1):
+def clean_data(train, test, threshold=0):
     '''
     remove users with variance lower then the threshold (in ratings)
     :param train:
@@ -123,10 +123,6 @@ def clean_data(train, test, threshold=-1):
     # train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: scale_min_max(x), axis=1)
     # test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: scale_min_max(x), axis=1)
 
-    # print('Scaling Norm each row')
-    # train['train_ratings_all'] = train['train_ratings_all'].apply(lambda x: scale_norm(x), axis=0)
-    # test['test_ratings_all'] = test['test_ratings_all'].apply(lambda x: scale_norm(x), axis=0)
-
     return train, test
 
 def split_train_dev(data, labels, test_size=0.2):
@@ -135,6 +131,3 @@ def split_train_dev(data, labels, test_size=0.2):
 
 def scale_min_max(x):
     return (x - x.min()) / (x.max() - x.min())
-
-def scale_norm(x):
-    return (x - x.mean()) / (x.std())

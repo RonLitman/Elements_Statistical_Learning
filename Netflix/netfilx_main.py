@@ -1,12 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from Netflix import models
-from Netflix.general_function import *
+import models
+from general_function import *
 from sklearn.metrics import mean_squared_error
 import math
 import xgboost as xgb
 
+def run_lgb_loop(dict_train, iter_time=100):
+    train = []
+    dev = []
+    for i in range(0, iter_time):
+        x_train, x_dev, y_train, y_dev = split_train_dev(dict_train['train_ratings_all'], dict_train['train_y_rating'], test, Type='random')
+        clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
+        train.append(mse_train_reg)
+        dev.append(mse_dev_reg)
+        print(i)
+        print('minimum:', min(dev), 'maximum:', max(dev), 'std:', np.std(dev), 'mean:', np.mean(dev))
 
 def run_lin_model(x_train, x_dev, y_train, y_dev):
     print('\n')
@@ -17,7 +27,8 @@ def run_lin_model(x_train, x_dev, y_train, y_dev):
     mse_dev_reg = math.sqrt(mean_squared_error(y_dev, preds_dev))
     print('RMSE on train is: {}'.format(mse_train_reg))
     print('RMSE on DEV is: {}'.format(mse_dev_reg))
-    return clf
+    return clf, mse_train_reg, mse_dev_reg
+
 
 def run_cat(x_train, x_dev, y_train, y_dev):
     print('\n')
@@ -39,7 +50,7 @@ def run_lgb_model(x_train, x_dev, y_train, y_dev):
     mse_dev_reg = math.sqrt(mean_squared_error(y_dev, preds_dev))
     print('RMSE on train is: {}'.format(mse_train_reg))
     print('RMSE on DEV is: {}'.format(mse_dev_reg))
-    return clf
+    return clf, mse_train_reg, mse_dev_reg
 
 def run_xgb_model(x_train, x_dev, y_train, y_dev):
     print('\n')
@@ -52,17 +63,14 @@ def run_xgb_model(x_train, x_dev, y_train, y_dev):
 
 
 movie_titles, train, test = load_and_set_data()
-
-print_general_info(train, test)
-
 # df_train, df_test = set_df_from_metrix(train, test)
-
 
 train, test = clean_data(train, test)
 
-x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'])
+x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'], test, Type='knn')
 
-clf = run_lin_model(x_train, x_dev, y_train, y_dev)
+clf, mse_train_reg, mse_dev_reg = run_lin_model(x_train, x_dev, y_train, y_dev)
+clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
 
 # clf = run_cat(x_train, x_dev, y_train, y_dev)
 
@@ -71,9 +79,11 @@ clf = run_lin_model(x_train, x_dev, y_train, y_dev)
 
 # clf = run_xgb_model(x_train, x_dev, y_train, y_dev)
 
-clf = run_lgb_model(x_train, x_dev, y_train, y_dev)
-
+# run_lgb_loop(train, iter_time=100)
 
 preds_test = clf.predict(test['test_ratings_all'], num_iteration=clf.best_iteration)
-np.savetxt('/Users/ronlitman/Ronlitman/University/Statistic/שנה א׳ - סמט׳ א׳/למידה סטטיסטית/Netflix/preds.csv',
+
+
+np.savetxt('/Users/nadavnagel/Documents/studying/University/Msc/Elements_Statistical_Learning/Netflix/NadavPreds.csv',
            preds_test, delimiter=",")
+
