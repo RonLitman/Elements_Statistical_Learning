@@ -12,7 +12,7 @@ from sklearn.neighbors import DistanceMetric
 import xgboost as xgb
 
 
-def lin_model(x_train, y_train):
+def lin_model(x_train, y_train, method='normal'):
     '''
     fit a LinearRegression
     :param x_train:
@@ -20,7 +20,12 @@ def lin_model(x_train, y_train):
     :return:
     '''
     print('Training a Linear Regression model')
-    clf_reg = linear_model.LinearRegression()
+
+    if method == 'normal':
+        clf_reg = linear_model.LinearRegression()
+    if method == 'Lasso':
+        clf_reg = linear_model.Lasso(alpha=0.1)
+
     clf_reg.fit(x_train, y_train)
     return clf_reg
 

@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
-import models
+import Netflix.models as models
 from sklearn.metrics import mean_squared_error
 import math
 from sklearn.neighbors import KNeighborsClassifier
@@ -116,8 +116,8 @@ def clean_data(train, test):
     :return:
     """
 
-    avg_before_1990, avg_before_2000, avg_after_2000 = get_avg_by_year(train['train_ratings_all'])
-    avgTest_before_1990, avgTest_before_2000, Testavg_after_2000 = get_avg_by_year(test['test_ratings_all'])
+    avg_dict_train = get_avg_by_year(train['train_ratings_all'])
+    avg_dict_test = get_avg_by_year(test['test_ratings_all'])
 
     train['train_ratings_all'] = fill_missing(train['train_ratings_all'])
     test['test_ratings_all'] = fill_missing(test['test_ratings_all'])
@@ -125,34 +125,34 @@ def clean_data(train, test):
     train['train_ratings_all'] = set_dates_feat(train, kind='train')
     test['test_ratings_all'] = set_dates_feat(test, kind='test')
 
-    train['train_ratings_all']['avg_before_1990'] = avg_before_1990
-    train['train_ratings_all']['avg_before_2000'] = avg_before_2000
-    train['train_ratings_all']['avg_after_2000'] = avg_after_2000
-    test['test_ratings_all']['avg_before_1990'] = avgTest_before_1990
-    test['test_ratings_all']['avg_before_2000'] = avgTest_before_2000
-    test['test_ratings_all']['avg_after_2000'] = Testavg_after_2000
+    for year, value in avg_dict_train.items():
+        train['train_ratings_all']['avg_{}_{}'.format(value[1], year)] = value[0]
+
+    for year, value in avg_dict_test.items():
+        test['test_ratings_all']['avg_{}_{}'.format(value[1], year)] = value[0]
 
     return train, test
 
 
 def split_train_dev(data, labels, test, test_size=0.2, Type='random'):
     if Type == 'knn':
-        data = data.replace(np.nan, 0)
         knn = KNeighborsClassifier(n_neighbors=1)
         knn.fit(data, labels)
-        index_for_dev = knn.kneighbors(test['test_ratings_all'].replace(np.nan, 0))[1]
-        index_for_dev = list(set([int(i[0]) for i in index_for_dev]))
-        # index_for_dev = []
-        # for x in range(2000):
-        #     index_for_dev.append(random.randint(1, 9999))
 
+        index_for_dev = knn.kneighbors(test['test_ratings_all'])[1]
+
+        index_for_dev = list(set([int(i[0]) for i in index_for_dev]))
         index_for_train = list(set([i for i in data.index if i not in index_for_dev]))
+
         x_train = data.iloc[index_for_train, :]
         x_dev = data.iloc[index_for_dev, :]
+
         y_train = labels.iloc[index_for_train, :]
         y_dev = labels.iloc[index_for_dev, :]
+
     if Type == 'random':
         x_train, x_dev, y_train, y_dev = train_test_split(data, labels, test_size=test_size)
+
     return x_train, x_dev, y_train, y_dev
 
 
@@ -160,11 +160,12 @@ def scale_min_max(x):
     return (x - x.min()) / (x.max() - x.min())
 
 
-def lin_model(x_train, x_test, y_train):
-    print('\n')
-    clf = models.lin_model(x_train, y_train)
+def lin_model(x_train, x_test, y_train, method='normal'):
+    clf = models.lin_model(x_train, y_train, method=method)
     preds = clf.predict(x_test)
 
+    if method == 'Lasso':
+        return list(more_itertools.flatten([preds]))
     return list(more_itertools.flatten(preds))
 
 
@@ -175,13 +176,23 @@ def set_column_order(df_ratings_all):
 
 
 def fill_missing(df_ratings_all):
-    set_column_order(df_ratings_all)
+    '''
+
+    :param df_ratings_all:
+    :return:
+    '''
+
+    # df_ratings_all = set_column_order(df_ratings_all)
     for i in range(14, df_ratings_all.shape[1]):
+        print('filling column {}'.format(i))
         column_name = df_ratings_all.columns[i]
         train_temp = df_ratings_all[df_ratings_all[column_name] > 0].iloc[:, list(range(0, i))]
         test_temp = df_ratings_all[df_ratings_all[column_name] == 0].iloc[:, list(range(0, i))]
         y_temp = df_ratings_all[df_ratings_all[column_name] > 0].iloc[:, [i]]
 
+        if (train_temp.shape[0] == 0) | (test_temp.shape[0] == 0):
+            print('No missing values in {} column, number: {}'.format(column_name, i))
+            continue
         fill_na = lin_model(train_temp, test_temp, y_temp)
 
         df_ratings_all[column_name][df_ratings_all[column_name] == 0] = fill_na
@@ -192,6 +203,13 @@ def fill_missing(df_ratings_all):
 
 
 def set_dates_feat(dict, kind='train'):
+    '''
+
+    :param dict:
+    :param kind:
+    :return:
+    '''
+
     df_ratings_all = dict['{}_ratings_all'.format(kind)].copy()
     df_y_date = dict['{}_y_date'.format(kind)].copy()
     df_dates_all = dict['{}_dates_all'.format(kind)].copy()
@@ -205,19 +223,37 @@ def set_dates_feat(dict, kind='train'):
 
     rating_on_same_day = pd.DataFrame(np.array(seen_on_same_day) * np.array(df_ratings_all))
     rating_on_same_day = rating_on_same_day.replace(0, np.nan)
-    df_ratings_all['day average'] = rating_on_same_day.mean(axis=1)
 
+    df_ratings_all['day average'] = rating_on_same_day.mean(axis=1)
+    df_ratings_all['day average'] = df_ratings_all['day average'].replace(np.nan, 0)
     df_ratings_all['movies_on_day'] = seen_on_same_day.sum(axis=1)
     df_ratings_all['date'] = df_y_date[0]
+
     return df_ratings_all
 
 
 def get_avg_by_year(df_ratings_all):
-    df_ratings_all = df_ratings_all.replace(0, np.NaN)
-    avg_before_1990 = df_ratings_all[([i for i in df_ratings_all.columns[:99] if int(i[0]) <= 1990])].mean(
-        axis=1).mean()
-    avg_before_2000 = df_ratings_all[([i for i in df_ratings_all.columns[:99] if 2000 >= int(i[0]) > 1990])].mean(
-        axis=1).mean()
-    avg_after_2000 = df_ratings_all[([i for i in df_ratings_all.columns[:99] if int(i[0]) > 2000])].mean(axis=1).mean()
-    df_ratings_all = df_ratings_all.replace(np.NaN, 0)
-    return avg_before_1990, avg_before_2000, avg_after_2000
+    '''
+
+    :param df_ratings_all:
+    :return:
+    '''
+    avg_yesr_dict = {1990: 'before', 2000: 'before', 2001: 'after'}
+    df = df_ratings_all.replace(0, np.NaN).copy()
+
+    for year in avg_yesr_dict.keys():
+        if avg_yesr_dict[year] == 'before':
+            columns_avg_list = [i for i in df.columns[:99] if int(i[0]) <= year]
+        else:
+            columns_avg_list = [i for i in df.columns[:99] if int(i[0]) >= year]
+
+        avg_yesr_dict[year] = [df[columns_avg_list].mean(axis=1), avg_yesr_dict[year]]
+
+    return avg_yesr_dict
+
+
+def scale_min_max(x):
+    return (x - x.min()) / (x.max() - x.min())
+
+
+

@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import models
-from general_function import *
+import Netflix.models as models
+from Netflix.general_function import *
 from sklearn.metrics import mean_squared_error
 import math
 import xgboost as xgb
+
 
 def run_lgb_loop(dict_train, iter_time=100):
     train = []
@@ -67,9 +68,11 @@ movie_titles, train, test = load_and_set_data()
 
 train, test = clean_data(train, test)
 
-x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'], test, Type='knn')
+# x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'], test, Type='knn')
+x_train, x_dev, y_train, y_dev = split_train_dev(train['train_ratings_all'], train['train_y_rating'], test)
 
 clf, mse_train_reg, mse_dev_reg = run_lin_model(x_train, x_dev, y_train, y_dev)
+
 clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
 
 # clf = run_cat(x_train, x_dev, y_train, y_dev)
@@ -84,6 +87,5 @@ clf, mse_train_reg, mse_dev_reg = run_lgb_model(x_train, x_dev, y_train, y_dev)
 preds_test = clf.predict(test['test_ratings_all'], num_iteration=clf.best_iteration)
 
 
-np.savetxt('/Users/nadavnagel/Documents/studying/University/Msc/Elements_Statistical_Learning/Netflix/NadavPreds.csv',
-           preds_test, delimiter=",")
-
+# np.savetxt('/Users/ronlitman/Ronlitman/University/Statistic/שנה א׳ - סמט׳ א׳/למידה סטטיסטית/Netflix/preds.csv',
+#            preds_test, delimiter=",")
