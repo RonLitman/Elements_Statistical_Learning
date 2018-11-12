@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import models
-from general_function import *
+import Netflix.models as models
+from Netflix.general_function import *
 from sklearn.metrics import mean_squared_error
 import math
 import xgboost as xgb
