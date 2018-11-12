@@ -119,19 +119,17 @@ def clean_data(train, test):
     avg_dict_train = get_avg_by_year(train['train_ratings_all'])
     avg_dict_test = get_avg_by_year(test['test_ratings_all'])
 
-    for year, value in avg_dict_train.items():
-        train['train_ratings_all']['avg_{}_{}'.format(value[1], year)] = value[0]
-
-    for year, value in avg_dict_test.items():
-        test['test_ratings_all']['avg_{}_{}'.format(value[1], year)] = value[0]
-
     train['train_ratings_all'] = fill_missing(train['train_ratings_all'])
     test['test_ratings_all'] = fill_missing(test['test_ratings_all'])
 
     train['train_ratings_all'] = set_dates_feat(train, kind='train')
     test['test_ratings_all'] = set_dates_feat(test, kind='test')
 
+    for year, value in avg_dict_train.items():
+        train['train_ratings_all']['avg_{}_{}'.format(value[1], year)] = value[0]
 
+    for year, value in avg_dict_test.items():
+        test['test_ratings_all']['avg_{}_{}'.format(value[1], year)] = value[0]
 
     return train, test
 
@@ -161,12 +159,11 @@ def scale_min_max(x):
     return (x - x.min()) / (x.max() - x.min())
 
 
-def lin_model(x_train, x_test, y_train):
-    print('\n')
-    clf = models.lin_model(x_train, y_train)
+def lin_model(x_train, x_test, y_train, method='normal'):
+    clf = models.lin_model(x_train, y_train, method=method)
     preds = clf.predict(x_test)
 
-    return list(more_itertools.flatten(preds))
+    return list(more_itertools.flatten([preds]))
 
 
 def set_column_order(df_ratings_all):
@@ -184,11 +181,15 @@ def fill_missing(df_ratings_all):
 
     # df_ratings_all = set_column_order(df_ratings_all)
     for i in range(14, df_ratings_all.shape[1]):
+        print('filling column {}'.format(i))
         column_name = df_ratings_all.columns[i]
         train_temp = df_ratings_all[df_ratings_all[column_name] > 0].iloc[:, list(range(0, i))]
         test_temp = df_ratings_all[df_ratings_all[column_name] == 0].iloc[:, list(range(0, i))]
         y_temp = df_ratings_all[df_ratings_all[column_name] > 0].iloc[:, [i]]
 
+        if (train_temp.shape[0] == 0) | (test_temp.shape[0] == 0):
+            print('No missing values in {} column, number: {}'.format(column_name, i))
+            continue
         fill_na = lin_model(train_temp, test_temp, y_temp)
 
         df_ratings_all[column_name][df_ratings_all[column_name] == 0] = fill_na
@@ -199,6 +200,13 @@ def fill_missing(df_ratings_all):
 
 
 def set_dates_feat(dict, kind='train'):
+    '''
+
+    :param dict:
+    :param kind:
+    :return:
+    '''
+
     df_ratings_all = dict['{}_ratings_all'.format(kind)].copy()
     df_y_date = dict['{}_y_date'.format(kind)].copy()
     df_dates_all = dict['{}_dates_all'.format(kind)].copy()
@@ -212,10 +220,12 @@ def set_dates_feat(dict, kind='train'):
 
     rating_on_same_day = pd.DataFrame(np.array(seen_on_same_day) * np.array(df_ratings_all))
     rating_on_same_day = rating_on_same_day.replace(0, np.nan)
-    df_ratings_all['day average'] = rating_on_same_day.mean(axis=1)
 
+    df_ratings_all['day average'] = rating_on_same_day.mean(axis=1)
+    df_ratings_all['day average'] = df_ratings_all['day average'].replace(np.nan, 0)
     df_ratings_all['movies_on_day'] = seen_on_same_day.sum(axis=1)
     df_ratings_all['date'] = df_y_date[0]
+
     return df_ratings_all
 
 
