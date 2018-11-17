@@ -8,6 +8,9 @@ import math
 from sklearn.neighbors import KNeighborsClassifier
 import more_itertools
 import random
+from surprise import Reader, Dataset
+from surprise import SVD, evaluate
+from surprise import NMF
 
 
 def load_and_set_data():
@@ -119,8 +122,11 @@ def clean_data(train, test):
     avg_dict_train = get_avg_by_year(train['train_ratings_all'])
     avg_dict_test = get_avg_by_year(test['test_ratings_all'])
 
-    train['train_ratings_all'] = fill_missing(train['train_ratings_all'])
-    test['test_ratings_all'] = fill_missing(test['test_ratings_all'])
+    # train['train_ratings_all'] = fill_missing(train['train_ratings_all'])
+    # test['test_ratings_all'] = fill_missing(test['test_ratings_all'])
+
+    train['train_ratings_all'], test['test_ratings_all'] = fill_missing_svd(train['train_ratings_all'],
+                                                                            test['test_ratings_all'])
 
     train['train_ratings_all'] = set_dates_feat(train, kind='train')
     test['test_ratings_all'] = set_dates_feat(test, kind='test')
@@ -255,5 +261,30 @@ def get_avg_by_year(df_ratings_all):
 def scale_min_max(x):
     return (x - x.min()) / (x.max() - x.min())
 
+def fill_missing_svd(df_train,df_test):
 
+    df = pd.read_csv(
+        '/Users/ronlitman/Ronlitman/University/Statistic/שנה א׳ - סמט׳ א׳/למידה סטטיסטית/Netflix/df_join.csv')
 
+    df = df[df.iid != 100]
+    reader = Reader(rating_scale=(0.5, 5.0))
+    data = Dataset.load_from_df(df[['uid', 'iid', 'rating']], reader)
+    trainset = data.build_full_trainset()
+    algo = NMF()
+
+    print('fitting NMF')
+    algo.fit(trainset)
+
+    print('filling train set')
+    for i in range(df_train.shape[0]):
+        for j in range(df_train.shape[1]):
+            if (df_train.iloc[i,j] == 0):
+                df_train.iloc[i, j] = algo.predict(i, j)
+
+    print('filling test set')
+    for i in range(df_test.shape[0]):
+        for j in range(df_test.shape[1]):
+            if (df_test.iloc[i,j] == 0):
+                df_test.iloc[i, j] = algo.predict(i + 10000, j)
+
+    return df_train, df_test
